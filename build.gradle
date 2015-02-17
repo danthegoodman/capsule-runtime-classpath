@@ -1,0 +1,127 @@
+plugins {
+    id "com.jfrog.bintray" version "1.0"
+}
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'application'
+
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
+mainClassName = 'Capsule'
+
+group = "us.kirchmeier"
+version = 'SNAPSHOT'
+
+def project_description = "A Caplet for adding to the class path from a system property"
+
+
+ext.isSnapshot = version == 'SNAPSHOT'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile 'co.paralleluniverse:capsule:0.10.0'
+}
+
+jar {
+    from { configurations.runtime.collect { zipTree(it) } }
+    manifest {
+        attributes(
+                'Main-Class': mainClassName,
+                'Caplets': 'RuntimeClasspathCapsule'
+        )
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+}
+
+bintrayUpload.doFirst {
+    if(isSnapshot){
+        println "Rerun with '-Pversion=...' to set a real version and actually upload the plugin"
+    } else {
+        println "Go publish it! https://bintray.com/danthegoodman/maven/gradle-capsule-plugin/"
+    }
+}
+
+bintray {
+    user = 'bintray_user'
+    key = 'bintray_api_key'
+
+    configurations = ['archives']
+
+    dryRun = isSnapshot
+    publish = false
+
+    pkg {
+        repo = 'maven'
+        name = 'capsule-runtime-classpath'
+        desc = project_description
+        websiteUrl = 'https://github.com/danthegoodman/capsule-runtime-classpath'
+        issueTrackerUrl = 'https://github.com/danthegoodman/capsule-runtime-classpath/issues'
+        vcsUrl = 'https://github.com/danthegoodman/capsule-runtime-classpath.git'
+        licenses = ['MIT']
+        labels = ['capsule']
+        publicDownloadNumbers = true
+
+        version {
+            name = project.version
+            vcsTag = project.version
+        }
+    }
+}
+
+task mainTestJar(type: Jar, dependsOn: testClasses) {
+    archiveName = 'test-main.jar'
+    from sourceSets.test.output
+    include "TestMain.class"
+    manifest {
+        attributes('Main-Class': 'TestMain')
+    }
+}
+
+task externalTestJar(type: Jar, dependsOn: testClasses) {
+    archiveName = 'test-external.jar'
+    from sourceSets.test.output
+    include "TestExternalDependency.class"
+}
+
+task testWithoutCaplet(type: JavaExec) {
+    dependsOn mainTestJar, externalTestJar
+    classpath(mainTestJar)
+    classpath(externalTestJar)
+    main 'TestMain'
+    standardOutput = new ByteArrayOutputStream();
+    doLast {
+        def result = standardOutput.toString().trim();
+        assert result == "Hello external dependency world"
+    }
+}
+
+task testWithCaplet(type: JavaExec) {
+    shouldRunAfter testWithoutCaplet
+    dependsOn mainTestJar, externalTestJar
+    classpath(jar)
+    main 'Capsule'
+    systemProperties['caplet.runtime.classpath'] = externalTestJar.outputs.files.singleFile.toString()
+    args mainTestJar.outputs.files.singleFile.toString()
+    standardOutput = new ByteArrayOutputStream();
+    doLast {
+        def result = standardOutput.toString().trim();
+        assert result == "Hello external dependency world"
+    }
+}
+
+check.dependsOn testWithoutCaplet, testWithCaplet
