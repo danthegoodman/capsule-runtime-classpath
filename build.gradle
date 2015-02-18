@@ -12,7 +12,7 @@ targetCompatibility = '1.7'
 mainClassName = 'Capsule'
 
 group = "us.kirchmeier"
-version = 'SNAPSHOT'
+if(!hasProperty('version')) version = 'SNAPSHOT';
 
 def project_description = "A Caplet for adding to the class path from a system property"
 
@@ -52,13 +52,13 @@ bintrayUpload.doFirst {
     if(isSnapshot){
         println "Rerun with '-Pversion=...' to set a real version and actually upload the plugin"
     } else {
-        println "Go publish it! https://bintray.com/danthegoodman/maven/gradle-capsule-plugin/"
+        println "Go publish it! https://bintray.com/danthegoodman/maven/capsule-runtime-classpath/"
     }
 }
 
 bintray {
-    user = 'bintray_user'
-    key = 'bintray_api_key'
+    user = project.hasProperty('bintrayUser') ? bintrayUser : ''
+    key = project.hasProperty('bintrayKey') ? bintrayKey : ''
 
     configurations = ['archives']
 

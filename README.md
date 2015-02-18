@@ -10,7 +10,7 @@ Command Line Example ([download from bintray][dl])
 
     java -Dcaplet.runtime.classpath=dependency.jar -jar capsule-runtime-classpath.jar your-capsule.jar
 
-[dl]:https://bintray.com/artifact/download/danthegoodman/maven/us/kirchmeier/gradle-capsule-plugin/0.10.0/gradle-capsule-plugin-0.10.0.jar
+[dl]:https://bintray.com/artifact/download/danthegoodman/maven/us/kirchmeier/capsule-runtime-classpath/0.10.0/capsule-runtime-classpath-0.10.0.jar
 
 Maven Artifact:
 
